@@ -416,7 +416,8 @@ public class BaseHandlerTests
             bool isChinaView = false,
             byte specialPlatform = 0,
             byte siteType = 0)
-            => RegisterCustomers(new RegisterCustomersOptions(registerUsernames, siteName, productStakeLevel, ip, mode, siteDBGroupId, isChinaView, specialPlatform, siteType));
+            => RegisterCustomers(new RegisterCustomersOptions(registerUsernames, siteName, productStakeLevel, ip, mode, siteDBGroupId, isChinaView,
+                specialPlatform, siteType));
 
         public Task TestWriteLogs(int custDBGroupId, IEnumerable<LogParam> logParams)
             => WriteLogs(custDBGroupId, logParams);
