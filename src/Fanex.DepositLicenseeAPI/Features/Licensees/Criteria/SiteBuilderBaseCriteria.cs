@@ -4,48 +4,57 @@ using Data;
 using Data.Repository;
 using Shared.SiteDB;
 
-public abstract class SiteBuilderBaseCriteria(
-    int custDBGroupId,
-    string customers,
-    string productBetSetting,
-    string productPT,
-    string productStakeLevel,
-    string productComm,
-    string creator,
-    string ip,
-    bool isCreateSub,
-    string licenseeType,
-    int siteId,
-    string siteName,
-    byte settingStatus) : CriteriaBase
+public record SiteBuilderParams(
+    int CustDBGroupId,
+    string Customers,
+    string ProductBetSetting,
+    string ProductPT,
+    string ProductStakeLevel,
+    string ProductComm,
+    string Creator,
+    string IP,
+    bool IsCreateSub,
+    string LicenseeType,
+    int SiteId,
+    string SiteName,
+    byte SettingStatus);
+
+public abstract class SiteBuilderBaseCriteria : CriteriaBase
 {
+    private readonly SiteBuilderParams _params;
+
+    protected SiteBuilderBaseCriteria(SiteBuilderParams parameters)
+    {
+        _params = parameters;
+    }
+
     [SpParam(Ignored = true)]
-    public int CustDBGroupId { get; } = custDBGroupId;
+    public int CustDBGroupId => _params.CustDBGroupId;
 
     [SpParam(SqlParamName = "Customers_List")]
-    public string Customers { get; } = customers;
+    public string Customers => _params.Customers;
 
-    public string ProductBetSetting { get; } = productBetSetting;
+    public string ProductBetSetting => _params.ProductBetSetting;
 
-    public string ProductPT { get; } = productPT;
+    public string ProductPT => _params.ProductPT;
 
-    public string ProductStakeLevel { get; } = productStakeLevel;
+    public string ProductStakeLevel => _params.ProductStakeLevel;
 
-    public string ProductComm { get; } = productComm;
+    public string ProductComm => _params.ProductComm;
 
-    public string Creator { get; } = creator;
+    public string Creator => _params.Creator;
 
-    public string IP { get; } = ip;
+    public string IP => _params.IP;
 
-    public bool IsCreateSub { get; } = isCreateSub;
+    public bool IsCreateSub => _params.IsCreateSub;
 
-    public string LicenseeType { get; } = licenseeType;
+    public string LicenseeType => _params.LicenseeType;
 
-    public int SiteId { get; } = siteId;
+    public int SiteId => _params.SiteId;
 
-    public string SiteName { get; } = siteName;
+    public string SiteName => _params.SiteName;
 
-    public byte SettingStatus { get; } = settingStatus;
+    public byte SettingStatus => _params.SettingStatus;
 
     public int ErrCode { get; set; }
 
@@ -61,7 +70,7 @@ public abstract class SiteBuilderBaseCriteria(
 
     public string ListSuperRollBack { get; set; }
 
-    public override string GetSettingKey() => SiteDBHelpers.GetSPNameInSiteDB(CustDBGroupId, "API_SiteBuilder_Licensee_Insert");
+    public override string GetSettingKey() => SiteDBHelpers.GetSPNameInSiteDB(_params.CustDBGroupId, "API_SiteBuilder_Licensee_Insert");
 
-    public override bool IsValid() => !string.IsNullOrEmpty(Customers);
+    public override bool IsValid() => !string.IsNullOrEmpty(_params.Customers);
 }

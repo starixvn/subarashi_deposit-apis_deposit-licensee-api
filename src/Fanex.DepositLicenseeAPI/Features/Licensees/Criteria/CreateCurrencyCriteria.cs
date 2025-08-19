@@ -1,34 +1,10 @@
 namespace Fanex.DepositLicenseeAPI.Features.Licensees.Criteria;
 
-public class CreateCurrencyCriteria(
-    int custDBGroupId,
-    string customers,
-    string productBetSetting,
-    string productPT,
-    string productStakeLevel,
-    string productComm,
-    string creator,
-    string ip,
-    bool isCreateSub,
-    string licenseeType,
-    int siteId,
-    string siteName,
-    byte settingStatus)
-    : SiteBuilderBaseCriteria(
-        custDBGroupId,
-        customers,
-        productBetSetting,
-        productPT,
-        productStakeLevel,
-        productComm,
-        creator,
-        ip,
-        isCreateSub,
-        licenseeType,
-        siteId,
-        siteName,
-        settingStatus)
+public class CreateCurrencyCriteria : SiteBuilderBaseCriteria
 {
+    public CreateCurrencyCriteria(SiteBuilderParams parameters) : base(parameters)
+    {
+    }
     public string CurrencyList { get; set; }
 
     public decimal PT_Sportsbook { get; set; }

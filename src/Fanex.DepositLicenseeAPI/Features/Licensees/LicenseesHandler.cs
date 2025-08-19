@@ -37,7 +37,7 @@ public class LicenseesHandler(
         }
 
         var failedCurrencies = new List<string>();
-        var registerResult = await RegisterCustomers(
+        var registerOptions = new RegisterCustomersOptions(
             validationResult.RegisterUsernames,
             request.SiteName,
             request.ProductStakeLevel,
@@ -47,6 +47,7 @@ public class LicenseesHandler(
             request.IsChinaView,
             request.SpecialPlatform,
             request.SiteType);
+        var registerResult = await RegisterCustomers(registerOptions);
 
         if (registerResult.result.IsNotOK)
         {
@@ -86,7 +87,24 @@ public class LicenseesHandler(
         int siteId,
         int custDBGroupId)
     {
-        var criteria = new CreateLicenseeCriteria(
+        var criteria = CreateLicenseeCriteria(request, customers, siteId, custDBGroupId);
+        var logParams = await repository.FetchAsync<LogParam>(criteria);
+
+        await LogErrorExtraInfoIfPresent(criteria);
+        var result = new Result(criteria.ErrCode, criteria.ErrMsg);
+
+        await ProcessLicenseeResult(result, logParams, criteria, request, custDBGroupId);
+
+        return (result, ParseFailedCurrencies(criteria.FailedCurrencies));
+    }
+
+    private CreateLicenseeCriteria CreateLicenseeCriteria(
+        CreateLicenseeRequest request,
+        string customers,
+        int siteId,
+        int custDBGroupId)
+    {
+        var baseParams = new SiteBuilderParams(
             custDBGroupId,
             customers,
             request.ProductBetSetting != null ? JsonSerializer.Serialize(request.ProductBetSetting) : null,
@@ -97,41 +115,67 @@ public class LicenseesHandler(
             request.IP,
             request.IsCreateSub,
             request.LicenseeType,
-            request.IsChinaView,
-            request.SpecialPlatform,
-            request.SiteType,
             siteId,
             request.SiteName,
             SettingStatus);
 
-        var logParams = await repository.FetchAsync<LogParam>(criteria);
+        var parameters = new CreateLicenseeParams(
+            baseParams,
+            request.IsChinaView,
+            request.SpecialPlatform,
+            request.SiteType);
 
+        return new CreateLicenseeCriteria(parameters);
+    }
+
+    private async Task LogErrorExtraInfoIfPresent(CreateLicenseeCriteria criteria)
+    {
         if (!string.IsNullOrWhiteSpace(criteria.ErrExtraInfo))
         {
             await logger.LogErrExtraInfo(criteria.ErrExtraInfo, criteria.GetSettingKey());
         }
+    }
 
-        var result = new Result(criteria.ErrCode, criteria.ErrMsg);
-
+    private async Task ProcessLicenseeResult(
+        Result result,
+        IEnumerable<LogParam> logParams,
+        CreateLicenseeCriteria criteria,
+        CreateLicenseeRequest request,
+        int custDBGroupId)
+    {
         if (result.IsOK)
         {
-            var writeLogsTask = WriteLogs(custDBGroupId, logParams);
-            var insertLicenseeDataTask = InsertLicenseeData(criteria.SiteName, criteria.ProductList, criteria.LicenseeType);
-            await Task.WhenAll(writeLogsTask, insertLicenseeDataTask);
+            await ProcessSuccessfulLicenseeCreation(custDBGroupId, logParams, criteria);
         }
 
+        await HandleLicenseePostProcessingTasks(criteria, request.SiteDBGroupId);
+    }
+
+    private async Task ProcessSuccessfulLicenseeCreation(
+        int custDBGroupId,
+        IEnumerable<LogParam> logParams,
+        CreateLicenseeCriteria criteria)
+    {
+        var writeLogsTask = WriteLogs(custDBGroupId, logParams);
+        var insertLicenseeDataTask = InsertLicenseeData(criteria.SiteName, criteria.ProductList, criteria.LicenseeType);
+        await Task.WhenAll(writeLogsTask, insertLicenseeDataTask);
+    }
+
+    private async Task HandleLicenseePostProcessingTasks(CreateLicenseeCriteria criteria, int siteDBGroupId)
+    {
         if (!string.IsNullOrWhiteSpace(criteria.InsBalExceptCustList))
         {
-            _ = Task.Run(() => InsertBalanceException(criteria.InsBalExceptCustList, request.SiteDBGroupId));
+            _ = Task.Run(() => InsertBalanceException(criteria.InsBalExceptCustList, siteDBGroupId));
         }
 
         if (!string.IsNullOrWhiteSpace(criteria.ListSuperRollBack))
         {
             await RollbackMultiple(criteria.ListSuperRollBack);
         }
-
-        return (result, criteria.FailedCurrencies?.Split(',').ToList() ?? []);
     }
+
+    private static List<string> ParseFailedCurrencies(string failedCurrencies)
+        => failedCurrencies?.Split(',').ToList() ?? [];
 
     private async Task<Result> InsertLicenseeData(string siteName, string productList, string licenseeType)
     {

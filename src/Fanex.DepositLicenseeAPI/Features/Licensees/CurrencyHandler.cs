@@ -36,13 +36,14 @@ public class CurrencyHandler(
         }
 
         var failedCurrencies = new List<string>();
-        var registerResult = await RegisterCustomers(
+        var registerOptions = new RegisterCustomersOptions(
             validationResult.RegisterUsernames,
             request.SiteName,
             request.ProductStakeLevel,
             request.IP,
             CreateMode.NewCurrency,
             siteDBConfig.CustDBGroupId);
+        var registerResult = await RegisterCustomers(registerOptions);
 
         if (registerResult.result.IsNotOK)
         {
@@ -64,7 +65,23 @@ public class CurrencyHandler(
         string siteName,
         SiteDBConfig siteDBConfig)
     {
-        var criteria = new CreateCurrencyCriteria(
+        var criteria = CreateCurrencyCriteria(request, customers, siteId, siteName, siteDBConfig);
+        var logParams = await repository.FetchAsync<LogParam>(criteria);
+        var result = new Result(criteria.ErrCode, criteria.ErrMsg);
+
+        await ProcessCurrencyResult(result, logParams, criteria, request, siteDBConfig);
+
+        return (result, ParseFailedCurrencies(criteria.FailedCurrencies));
+    }
+
+    private CreateCurrencyCriteria CreateCurrencyCriteria(
+        CreateCurrencyRequest request,
+        string customers,
+        int siteId,
+        string siteName,
+        SiteDBConfig siteDBConfig)
+    {
+        var parameters = new SiteBuilderParams(
             siteDBConfig.CustDBGroupId,
             customers,
             request.ProductBetSetting != null ? JsonSerializer.Serialize(request.ProductBetSetting) : null,
@@ -78,29 +95,50 @@ public class CurrencyHandler(
             siteId,
             siteName,
             SettingStatus);
+        return new CreateCurrencyCriteria(parameters);
+    }
 
-        var logParams = await repository.FetchAsync<LogParam>(criteria);
-        var result = new Result(criteria.ErrCode, criteria.ErrMsg);
-
+    private async Task ProcessCurrencyResult(
+        Result result,
+        IEnumerable<LogParam> logParams,
+        CreateCurrencyCriteria criteria,
+        CreateCurrencyRequest request,
+        SiteDBConfig siteDBConfig)
+    {
         if (result.IsOK && logParams.Any())
         {
-            await Task.WhenAll(
-                WriteLogs(siteDBConfig.CustDBGroupId, logParams),
-                InsertCurrencyData(siteName, criteria.CurrencyList, criteria.PT_Sportsbook, request.IP));
+            await ProcessSuccessfulCurrencyCreation(criteria, request, siteDBConfig, logParams);
         }
 
+        await HandlePostProcessingTasks(criteria, siteDBConfig.SiteDBGroupId);
+    }
+
+    private async Task ProcessSuccessfulCurrencyCreation(
+        CreateCurrencyCriteria criteria,
+        CreateCurrencyRequest request,
+        SiteDBConfig siteDBConfig,
+        IEnumerable<LogParam> logParams)
+    {
+        await Task.WhenAll(
+            WriteLogs(siteDBConfig.CustDBGroupId, logParams),
+            InsertCurrencyData(criteria.SiteName, criteria.CurrencyList, criteria.PT_Sportsbook, request.IP));
+    }
+
+    private async Task HandlePostProcessingTasks(CreateCurrencyCriteria criteria, int siteDBGroupId)
+    {
         if (!string.IsNullOrWhiteSpace(criteria.InsBalExceptCustList))
         {
-            _ = Task.Run(() => InsertBalanceException(criteria.InsBalExceptCustList, siteDBConfig.SiteDBGroupId));
+            _ = Task.Run(() => InsertBalanceException(criteria.InsBalExceptCustList, siteDBGroupId));
         }
 
         if (!string.IsNullOrWhiteSpace(criteria.ListSuperRollBack))
         {
             await RollbackMultiple(criteria.ListSuperRollBack);
         }
-
-        return (result, criteria.FailedCurrencies?.Split(',').ToList() ?? []);
     }
+
+    private static List<string> ParseFailedCurrencies(string failedCurrencies)
+        => failedCurrencies?.Split(',').ToList() ?? [];
 
     private async Task<Result> InsertCurrencyData(string siteName, string currencyList, decimal PT_Sportsbook, string ip)
     {

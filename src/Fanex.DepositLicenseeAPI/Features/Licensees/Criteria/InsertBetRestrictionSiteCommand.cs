@@ -11,13 +11,13 @@ public class InsertBetRestrictionSiteCommand(int custDBGroupId, int siteId) : No
 
     public int SiteId { get; } = siteId;
 
-    public int UserId { get; } = 10278938;
+    public int UserId { get; } = 10_278_938;
 
     public int LiveBetAccept { get; } = -2;
 
-    public byte SeizeBetTicket { get; } = 0;
+    public byte SeizeBetTicket { get; }
 
-    public string FollowAccount { get; } = null;
+    public string FollowAccount { get; }
 
     public int ErrCode { get; set; }
 

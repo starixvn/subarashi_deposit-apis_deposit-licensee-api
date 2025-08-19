@@ -30,4 +30,11 @@
 		<AdditionalFiles Include="..\..\README.md" Link="README.md" />
 		<AdditionalFiles Include="..\..\.dockerignore" Link=".dockerignore" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<SonarQubeSetting Include="sonar.coverage.exclusions">
+			<Value>**/Program.cs</Value>
+		</SonarQubeSetting>
+	</ItemGroup>
+
 </Project>

@@ -50,7 +50,6 @@ public static class ServiceCollectionExtensions
             logging.RequestHeaders.Add("sec-ch-ua");
             logging.RequestHeaders.Add("x-forwarded-for");
             logging.MediaTypeOptions.AddText("application/javascript");
-            //logging.RequestBodyLogLimit = 4096;
             logging.ResponseBodyLogLimit = 4096;
             logging.CombineLogs = true;
         });

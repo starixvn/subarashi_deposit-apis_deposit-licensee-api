@@ -3,35 +3,44 @@ namespace Fanex.DepositLicenseeAPI.Features.Licensees.Criteria;
 using Data;
 using Data.Repository;
 
-public class RegisterCustomersCommand(
-    string registerUsernames,
-    string siteName,
-    bool isChinaView,
-    byte specialPlatform,
-    byte siteType,
-    string productStakeLevel,
-    string ip,
-    byte mode,
-    int siteDBGroupId) : NonQueryCommand
+public record RegisterCustomersParams(
+    string RegisterUsernames,
+    string SiteName,
+    bool IsChinaView,
+    byte SpecialPlatform,
+    byte SiteType,
+    string ProductStakeLevel,
+    string IP,
+    byte Mode,
+    int SiteDBGroupId);
+
+public class RegisterCustomersCommand : NonQueryCommand
 {
+    private readonly RegisterCustomersParams _params;
+
+    public RegisterCustomersCommand(RegisterCustomersParams parameters)
+    {
+        _params = parameters;
+    }
+
     [SpParam(SqlParamName = "Usernames_Register")]
-    public string RegisterUsernames { get; } = registerUsernames;
+    public string RegisterUsernames => _params.RegisterUsernames;
 
-    public string SiteName { get; } = siteName;
+    public string SiteName => _params.SiteName;
 
-    public bool IsChinaView { get; } = isChinaView;
+    public bool IsChinaView => _params.IsChinaView;
 
-    public byte SpecialPlatform { get; } = specialPlatform;
+    public byte SpecialPlatform => _params.SpecialPlatform;
 
-    public byte SiteType { get; } = siteType;
+    public byte SiteType => _params.SiteType;
 
-    public string ProductStakeLevel { get; } = productStakeLevel;
+    public string ProductStakeLevel => _params.ProductStakeLevel;
 
-    public string IP { get; } = ip;
+    public string IP => _params.IP;
 
-    public byte Mode { get; } = mode;
+    public byte Mode => _params.Mode;
 
-    public int SiteDBGroupId { get; } = siteDBGroupId;
+    public int SiteDBGroupId => _params.SiteDBGroupId;
 
     public int ErrCode { get; set; }
 
@@ -48,5 +57,5 @@ public class RegisterCustomersCommand(
 
     public override string GetSettingKey() => "API_SiteBuilder_Customers_Register";
 
-    public override bool IsValid() => !string.IsNullOrWhiteSpace(RegisterUsernames);
+    public override bool IsValid() => !string.IsNullOrWhiteSpace(_params.RegisterUsernames);
 }
