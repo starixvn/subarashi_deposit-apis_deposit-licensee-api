@@ -42,7 +42,8 @@ public static class ServiceCollectionExtensions
             .WriteTo.Console()
             .Enrich.WithProperty("Team", "Subarashi")
             .Enrich.WithProperty("Application", "Deposit Licensee API")
-            .Enrich.WithProperty("Environment", configuration["Environment"]));
+            .Enrich.WithProperty("Environment", configuration["Environment"])
+            .Enrich.WithProperty("Version", configuration["Version"]));
 
         services.AddHttpLogging(logging =>
         {
@@ -50,7 +51,6 @@ public static class ServiceCollectionExtensions
             logging.RequestHeaders.Add("sec-ch-ua");
             logging.RequestHeaders.Add("x-forwarded-for");
             logging.MediaTypeOptions.AddText("application/javascript");
-            //logging.RequestBodyLogLimit = 4096;
             logging.ResponseBodyLogLimit = 4096;
             logging.CombineLogs = true;
         });

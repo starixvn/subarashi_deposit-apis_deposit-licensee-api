@@ -39,27 +39,30 @@ public abstract class BaseHandler(
         return new ValidateCreateLicenseeResult(command.ErrCode, command.ErrMsg, command.RegisterUsernames);
     }
 
-    protected async Task<(RegisterCustomersResult result, List<string> failedCurrencies)> RegisterCustomers(
-        string registerUsernames,
-        string siteName,
-        StakeLevel[] productStakeLevel,
-        string ip,
-        byte mode,
-        int siteDBGroupId,
-        bool isChinaView = false,
-        byte specialPlatform = 0,
-        byte siteType = 0)
+    public record RegisterCustomersOptions(
+        string RegisterUsernames,
+        string SiteName,
+        StakeLevel[] ProductStakeLevel,
+        string IP,
+        byte Mode,
+        int SiteDBGroupId,
+        bool IsChinaView = false,
+        byte SpecialPlatform = 0,
+        byte SiteType = 0);
+
+    protected async Task<(RegisterCustomersResult result, List<string> failedCurrencies)> RegisterCustomers(RegisterCustomersOptions options)
     {
-        var command = new RegisterCustomersCommand(
-            registerUsernames,
-            siteName,
-            isChinaView,
-            specialPlatform,
-            siteType,
-            productStakeLevel != null ? JsonSerializer.Serialize(productStakeLevel) : null,
-            ip,
-            mode,
-            siteDBGroupId);
+        var parameters = new RegisterCustomersParams(
+            options.RegisterUsernames,
+            options.SiteName,
+            options.IsChinaView,
+            options.SpecialPlatform,
+            options.SiteType,
+            options.ProductStakeLevel != null ? JsonSerializer.Serialize(options.ProductStakeLevel) : null,
+            options.IP,
+            options.Mode,
+            options.SiteDBGroupId);
+        var command = new RegisterCustomersCommand(parameters);
 
         await repository.ExecuteAsync(command);
 
