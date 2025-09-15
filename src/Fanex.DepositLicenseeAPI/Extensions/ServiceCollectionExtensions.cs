@@ -42,7 +42,8 @@ public static class ServiceCollectionExtensions
             .WriteTo.Console()
             .Enrich.WithProperty("Team", "Subarashi")
             .Enrich.WithProperty("Application", "Deposit Licensee API")
-            .Enrich.WithProperty("Environment", configuration["Environment"]));
+            .Enrich.WithProperty("Environment", configuration["Environment"])
+            .Enrich.WithProperty("Version", configuration["Version"]));
 
         services.AddHttpLogging(logging =>
         {
